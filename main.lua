@@ -15,7 +15,46 @@ function init()
 	config.TryBindKey("F12", "command:makeup", true)
 
 	config.MakeCommand("makeupbg", makeupbgCommand, config.NoComplete)
-	config.TryBindKey("F9", "command:makeupbg", true)	
+	config.TryBindKey("F9", "command:makeupbg", true)
+
+	config.MakeCommand("viewshell", toShell, config.NoComplete)
+	config.TryBindKey("F6", "command:viewshell", true)
+end
+
+function toShell()
+	shell.RunInteractiveShell("echo", true, false)
+end
+
+function runQuartoJob(filename)
+    if currentQuartoJob ~= nil then
+        shell.JobStop(currentQuartoJob)
+        currentQuartoJob = nil
+    end
+
+    -- Callbacks
+    local function onStdout(line, args)
+    	shell.RunInteractiveShell(string.format("echo '%s'",line), false, false)
+        micro.InfoBar():Message("Quarto: " .. line)
+    end
+
+    local function onStderr(line, args)
+    	shell.RunInteractiveShell(string.format("echo '%s'",line), false, false)
+        micro.InfoBar():Message("Quarto: " .. line)
+    end
+
+    local function onExit(line, args)
+        --micro.InfoBar():Message("Quarto finished, press Ctrl-W to see full output")
+        --writeOutput("=== Quarto stopped ===")
+        currentQuartoJob = nil
+    end
+
+    -- Start Quarto as a job
+    currentQuartoJob = shell.JobStart(
+        string.format("quarto preview '%s' --no-browser --log temp.txt", filename),
+        onStdout,
+        onStderr,
+        onExit
+    )
 end
 
 -- ### F5 runit ###
@@ -28,8 +67,7 @@ function runitCommand(bp) -- bp BufPane
 	local filename = bp.Buf.GetName(bp.Buf)
 	local filetype = bp.Buf:FileType()
 
-	if filetype == "c" then
-		-- c is a special case
+	if filetype == "c" then		-- c is a special case
 		-- c compilation only supported on Linux-like systems
 		shell.RunInteractiveShell("clear", false, false)
 
@@ -95,6 +133,8 @@ function runitCommand(bp) -- bp BufPane
 		end
 	elseif filetype == "python" then
 		cmd = string.format("python3 '%s'", filename)
+	elseif filetype == "markdown" then
+		cmd = string.format("quarto preview '%s' --no-browser", filename)		
 	elseif filetype == "html" then
 		cmd = string.format("firefox-esr '%s'", filename)
 	elseif filetype == "lua" then
@@ -103,8 +143,12 @@ function runitCommand(bp) -- bp BufPane
 		cmd = string.format("bash '%s'", filename) -- we just assume the shell is bash
 	end
 
-	shell.RunInteractiveShell("clear", false, false)
-	shell.RunInteractiveShell(cmd, true, false)		
+    if filetype == "markdown" then
+        runQuartoJob(filename)
+    else
+    	shell.RunInteractiveShell("clear", false, false)
+        shell.RunInteractiveShell(cmd, true, false)
+    end
 end
 
 -- ### F12 makeup ###
@@ -214,4 +258,3 @@ function makeup(bg)
 	return
 
 end	
-
