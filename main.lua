@@ -19,6 +19,8 @@ function init()
 
 	config.MakeCommand("viewshell", toShell, config.NoComplete)
 	config.TryBindKey("F6", "command:viewshell", true)
+
+	config.AddRuntimeFile("micro-run", config.RTSyntax, "syntax/markdown.yaml")
 end
 
 function toShell()
