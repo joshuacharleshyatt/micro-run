@@ -1,5 +1,6 @@
 -- micro-run - Press F5 to run the current file, F12 to run make, F9 to make in background
 -- Copyright 2020-2022 Tero Karvinen http://TeroKarvinen.com/micro
+-- Copyright 2025 Joshua Hyatt https://joshuacharleshyatt.github.io/personal/
 -- https://github.com/terokarvinen/micro-run
 
 local config = import("micro/config")
@@ -20,7 +21,12 @@ function init()
 	config.MakeCommand("viewshell", toShell, config.NoComplete)
 	config.TryBindKey("F6", "command:viewshell", true)
 
-	config.AddRuntimeFile("micro-run", config.RTSyntax, "syntax/markdown.yaml")
+	config.AddRuntimeFile("runit", config.RTHelp, "help/runit-plugin.md")
+end 
+
+function onBufferOpen(buf)
+    config.AddRuntimeFile("runit", config.RTSyntax, "markdown.yaml")
+    config.Reload()
 end
 
 function toShell()
